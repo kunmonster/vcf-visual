@@ -172,3 +172,5 @@ cython_debug/
 *.png
 *.tiff
 *.svg
+
+test/*.png

@@ -20,7 +20,11 @@ class VCFINFO:
             chr_set.append(v.CHROM)
             v_start.append(v.POS)
             type_set.append(v.INFO.get('SVTYPE'))
-            v_len.append(int(v.end) - v.POS)
+            length = v.INFO.get('SVLEN')
+            if length is not None:
+                v_len.append(abs(int(length)))
+            else:
+                v_len.append(int(v.end) - v.POS)
         vcf_info = pd.DataFrame({'CHR':pd.Series(chr_set, dtype='category'), 
                                  'START':v_start, 
                                  'TYPE':pd.Series(type_set,dtype='category'), 

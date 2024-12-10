@@ -1,4 +1,4 @@
-from cyvcf2 import VCF
+from cyvcf2 import VCF,Variant
 import pandas as pd
 class VCFINFO:
     def __init__(self, vcf_path):
@@ -19,12 +19,28 @@ class VCFINFO:
         for v in self.vcf:
             chr_set.append(v.CHROM)
             v_start.append(v.POS)
-            type_set.append(v.INFO.get('SVTYPE'))
-            length = v.INFO.get('SVLEN')
-            if length is not None:
-                v_len.append(abs(int(length)))
-            else:
+            if v.is_sv:
+                type_set.append(v.INFO.get('SVTYPE'))
+                length = v.INFO.get('SVLEN')
+                if length is not None:
+                    v_len.append(abs(int(length)))
+                else:
+                    v_len.append(int(v.end) - v.POS)
+            elif v.is_indel:
+                type_set.append('INDEL')
+                v_len.append(0)
+            elif v.is_snp:
+                type_set.append('SNP')
+                v_len.append(1)
+            elif v.is_deletion:
+                type_set.append('DEL')
                 v_len.append(int(v.end) - v.POS)
+            elif v.is_transition:
+                type_set.append('TRANSITION')
+                v_len.append(0)
+            else:
+                type_set.append('OTHER')
+                v_len.append(0)
         vcf_info = pd.DataFrame({'CHR':pd.Series(chr_set, dtype='category'), 
                                  'START':v_start, 
                                  'TYPE':pd.Series(type_set,dtype='category'), 

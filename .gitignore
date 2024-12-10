@@ -173,6 +173,6 @@ cython_debug/
 *.tiff
 *.svg
 
-test/*.vcf.gz
-test/*.tbi
+test/data/*.vcf.gz
+test/data/*.tbi
 test/*.png

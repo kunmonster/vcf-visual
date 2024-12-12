@@ -9,7 +9,6 @@ from io import BytesIO
 import matplotlib.ticker as mticker
 import matplotlib as mpl
 
-
 def visual_by_chr(data:pd.DataFrame):
     """generate bar chart of variant type in each chromosome\n
 
@@ -17,7 +16,6 @@ def visual_by_chr(data:pd.DataFrame):
         data (pd.DataFrame): VCF info
     Returns:
         None
-
     """
     chr_num = len(data['CHR'].unique())
     
@@ -36,7 +34,7 @@ def visual_by_chr(data:pd.DataFrame):
     else:
         # more than one chromosome, then generate stacked bar chart
         count_data = data.groupby(['TYPE','CHR']).size().reset_index(name='COUNT')
-        bar_labels = sorted(count_data['CHR'].unique())
+        bar_labels = natsorted(count_data['CHR'].unique())
         var_type = sorted(count_data['TYPE'].unique())
         bar_data = {}
         for every_type in var_type:

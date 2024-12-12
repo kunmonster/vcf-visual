@@ -1,6 +1,7 @@
 from cyvcf2 import VCF
 import pandas as pd
 import pysam
+import numpy as np
 from concurrent.futures import ThreadPoolExecutor
 
 class VCFINFO:
@@ -51,61 +52,3 @@ class VCFINFO:
                                  'TYPE':pd.Series(type_set,dtype='category'), 
                                  'LEN':v_len})
         return vcf_info
-    
-
-def process_per_var(v):
-    type_set = []
-    for i in v : 
-        type_set.append(get_var_type(i))
-    return type_set
-
-def process_vcf_file_parallel(vcf_file, chunk_size=1000000):
-    with pysam.VariantFile(vcf_file) as vcf:
-        with ThreadPoolExecutor() as executor:
-            vcf_chunk = []
-            futures = []
-            
-            # 遍历 VCF 文件，将记录按块分配给线程处理
-            for record in vcf:
-                vcf_chunk.append(record)
-                if len(vcf_chunk) >= chunk_size:
-                    futures.append(executor.submit(process_per_var, vcf_chunk))
-                    vcf_chunk = []  # 重置块
-
-            # 如果最后的块不足 `chunk_size`，也要处理
-            if vcf_chunk:
-                futures.append(executor.submit(process_per_var, vcf_chunk))
-            
-            # 等待所有线程完成并收集返回的 DataFrame
-            all_results = []
-            for future in futures:
-                all_results.extend(future.result())  # 合并返回的所有类型
-            
-            return all_results
-
-
-
-
-def get_var_type(variant: pysam.VariantRecord):
-    ref = variant.ref
-    alts = variant.alts
-    Svtype = ["INV","DEL","INS","DUP","CNV"] 
-    matching_svtypes = [svtype for svtype in Svtype if svtype in alts[0]]
-    if "SVTYPE" in  variant.info or len(matching_svtypes) > 0:
-        return variant.info["SVTYPE"] if "SVTYPE" in variant.info else matching_svtypes[0]
-    if len(ref) == 1:
-        # check the alt allele
-        if len(alts[0]) == 1:
-            return "SNP"
-        else:
-            return "INDEL"
-    if len(ref) > 1:
-        if len(alts[0]) < len(ref):
-            return "DEL"
-        else:
-            return "INS"
-    return "OTHER"
-
-
-process_vcf_file_parallel("/home/fkj/py_project/statvcf-sv/test/data/HG002_GRCh38_TandemRepeats_v1.0.1.vcf.gz")
-

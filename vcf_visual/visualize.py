@@ -1,7 +1,6 @@
 from matplotlib import pyplot as plt
 import pandas as pd
 import numpy as np
-from vcf_visual.util.utils import sort_chromosome
 import math
 from natsort import natsorted
 from PIL import Image
@@ -134,6 +133,25 @@ def distribution_by_chr(data:pd.DataFrame):
     fig.suptitle("Structural Variant Distribution by Chromosome", fontsize=16)
     plt.tight_layout(rect=[0, 0, 1, 1])
     fig.savefig('test/pics/distribution_by_chr.png')
+
+# TODO:MAF histogram
+def visual_maf(data:pd.DataFrame):
+    """ generate histogram of variant MAF\n
+    Args:
+        data (pd.DataFrame): VCF info
+    Returns:
+        None
+    """
+    return None
+
+# TODO:AF histogram
+def visual_af(data:pd.DataFrame):
+    """ generate histogram of variant AF\n
+    Args:
+        data (pd.DataFrame): VCF info
+    Returns:
+        None
+    """
 
 
 # TODO:Annotation pie chart

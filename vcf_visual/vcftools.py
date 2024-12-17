@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 class VCFINFO:
     def __init__(self, vcf_path):
-        self.vcf = VCF(vcf_path)
+        self.vcf = VCF(vcf_path,gts012=True)
         self.header = self.vcf.raw_header
         self.samples = self.vcf.samples
     def get_vcf(self):
@@ -20,9 +20,15 @@ class VCFINFO:
         v_start = []
         type_set = []
         v_len = []
+        maf = []
+        aaf = []
+        missing_rate = []
         for v in self.vcf:
             chr_set.append(v.CHROM)
             v_start.append(v.POS)
+            maf.append(min(v.aaf,1-v.aaf))
+            aaf.append(v.aaf)
+            missing_rate.append((1-v.call_rate))
             if v.is_sv:
                 type_set.append(v.INFO.get('SVTYPE'))
                 length = v.INFO.get('SVLEN')
@@ -49,6 +55,11 @@ class VCFINFO:
                 v_len.append(0)
         vcf_info = pd.DataFrame({'CHR':pd.Series(chr_set, dtype='category'), 
                                  'START':v_start, 
-                                 'TYPE':pd.Series(type_set,dtype='category'), 
-                                 'LEN':v_len})
+                                 'TYPE':pd.Series(type_set,dtype='category'),
+                                 'LEN':v_len,
+                                 'MAF':maf,
+                                 'AAF':aaf,
+                                 'MISSING_RATE':missing_rate
+                                 })
+        # breakpoint()
         return vcf_info

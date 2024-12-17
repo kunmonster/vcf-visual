@@ -1,8 +1,108 @@
+from tarfile import SUPPORTED_TYPES
 import pandas as pd 
 from vcf_visual import plot
 from vcf_visual.util.utils import validate_x_keys
 from natsort import natsorted
 from vcf_visual.plot import *
+
+ALLOWED_VARIABLES = {"CHR", "MAF", "LEN", "AAF", "TYPE", "MISSING_RATE"}
+SUPPORTED_OPERATIONS = ["count", "sum", "mean", "density"]
+
+class Axis:
+    
+    def __init__(self,x,y=None,stack=None) -> None:
+        self.x = x
+        self.y = y
+        self.stack = stack
+        self.x_type = None
+        self.y_type = None
+        self.stack_type = None
+        self.validate_variable(self.x, "X")
+        if self.y:
+            self.validate_variable(self.y, "Y")
+        if self.stack:
+            self.validate_variable(self.stack, "Stack")
+        pass
+    
+    def validate_variable(self, var, axis_name):
+        """
+        校验变量是否在允许范围内
+        """
+        if var not in ALLOWED_VARIABLES:
+            raise ValueError(f"错误：{axis_name} 轴变量 '{var}' 不在允许的变量范围内！"
+                             f" 允许的变量有：{', '.join(ALLOWED_VARIABLES)}")
+    def determine_variable_type(self, data):
+        """
+        判断变量是分类还是连续类型
+        """
+        if self.x is None:
+            raise ValueError("empty x axis!")
+        if self.stack is not None and self.y is not None:
+            raise ValueError("if you want to stack, y axis should be None!")
+        
+        self.x_type = "categorical" if data[self.x].dtype == "object" or data[self.x].dtype == "category" else "numerical"
+        if self.y:
+            self.y_type = "categorical" if data[self.y].dtype == "object" or data[self.y].dtype == "category" else "numerical"
+            return
+        if self.stack:
+            self.stack_type = "categorical" if data[self.stack].dtype == "object" or data[self.stack].dtype == "category" else "numerical"
+            if self.stack_type != "categorical":
+                raise ValueError(f"error: stack variable '{self.stack}' must be categorical!")
+            if self.stack_type == "categorical" and self.x_type != "categorical":
+                raise ValueError(f"error: stack variable '{self.stack}' is categorical,but x '{self.x}' is not categorical!")
+
+
+class Operation:
+    def __init__(self,operation:str) -> None:
+        if operation in SUPPORTED_TYPES:
+            raise ValueError(f"operation: '{operation}' is invalid!")
+        self.operation_type = operation
+    
+class PlotType:
+    @staticmethod
+    def infer_plot_type(axis:Axis,operation:Operation):
+          # axis检验已经在上级方法中完成
+        if axis.stack is not None:
+            return "stack_bar"
+        if axis.y is not None:
+            if operation.operation_type == "raw":
+                if axis.y_type == "numerical" and axis.x_type == "numerical":
+                    return "scatter"
+                elif axis.x_type == "categorical" and axis.y_type == "numerical":
+                    return "boxplot"
+                else:
+                    raise ValueError("UNKNOWN PLOT TYPE!")
+            elif operation.operation_type == "mean":
+                if axis.x_type == "categorical" and axis.y_type == "numerical":
+                    return "bar"
+                else:
+                    raise ValueError("UNKNOWN PLOT TYPE!")
+            else:
+                raise ValueError("UNKNOWN PLOT TYPE!")        
+        else:
+            if operation.operation_type == "count":
+                if axis.x_type == "categorical":
+                    return "bar"
+                else:
+                    return "density"
+            else:
+                raise ValueError("UNKNOWN PLOT TYPE!")
+            
+
+def prepare_data(data:pd.DataFrame,axis:Axis,operation:Operation,plot_type):
+    if plot_type == "stack_bar":
+        prepare_data = data.groupby([axis.stack,axis.x]).size().reset_index(name='COUNT')
+    elif plot_type == "scatter":
+        return data[[axis.x, axis.y]]
+    elif plot_type == "density":
+        pass
+    elif plot_type == "boxplot":
+        pass
+    elif plot_type == "bar":
+        pass
+    else: 
+        pass
+
 
 class VCFVISUAL:
     def __init__(self,data:pd.DataFrame,expression:str) -> None:

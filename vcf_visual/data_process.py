@@ -1,15 +1,13 @@
-from tarfile import SUPPORTED_TYPES
 import pandas as pd 
-from vcf_visual import plot
-from vcf_visual.util.utils import validate_x_keys
 from natsort import natsorted
-from vcf_visual.plot import *
+from plot import *
+
+from vcftools import VCFINFO
 
 ALLOWED_VARIABLES = {"CHR", "MAF", "LEN", "AAF", "TYPE", "MISSING_RATE"}
 SUPPORTED_OPERATIONS = ["count", "sum", "mean", "density"]
 
 class Axis:
-    
     def __init__(self,x,y=None,stack=None) -> None:
         self.x = x
         self.y = y
@@ -22,7 +20,6 @@ class Axis:
             self.validate_variable(self.y, "Y")
         if self.stack:
             self.validate_variable(self.stack, "Stack")
-        pass
     
     def validate_variable(self, var, axis_name):
         """
@@ -32,6 +29,7 @@ class Axis:
             raise ValueError(f"错误：{axis_name} 轴变量 '{var}' 不在允许的变量范围内！"
                              f" 允许的变量有：{', '.join(ALLOWED_VARIABLES)}")
     def determine_variable_type(self, data):
+        
         """
         判断变量是分类还是连续类型
         """
@@ -54,7 +52,7 @@ class Axis:
 
 class Operation:
     def __init__(self,operation:str) -> None:
-        if operation in SUPPORTED_TYPES:
+        if operation in SUPPORTED_OPERATIONS:
             raise ValueError(f"operation: '{operation}' is invalid!")
         self.operation_type = operation
     
@@ -74,115 +72,81 @@ class PlotType:
                     raise ValueError("UNKNOWN PLOT TYPE!")
             elif operation.operation_type == "mean":
                 if axis.x_type == "categorical" and axis.y_type == "numerical":
-                    return "bar"
+                    return "mean_bar"
                 else:
                     raise ValueError("UNKNOWN PLOT TYPE!")
+            elif operation.operation_type == "density":
+                # this situation is fit to multi-ax
+                if axis.x_type == "categorical" and axis.y_type == "numerical":
+                    return "multi_ax_density"
             else:
                 raise ValueError("UNKNOWN PLOT TYPE!")        
         else:
-            if operation.operation_type == "count":
-                if axis.x_type == "categorical":
-                    return "bar"
-                else:
-                    return "density"
+            if operation.operation_type == "count" and axis.x_type == "categorical":
+                return "count_bar"
+            elif operation.operation_type == "density" and axis.x_type == "numerical":
+                return "single_ax_density"
             else:
                 raise ValueError("UNKNOWN PLOT TYPE!")
-            
+        
 
-def prepare_data(data:pd.DataFrame,axis:Axis,operation:Operation,plot_type):
+def data_to_plot(data:pd.DataFrame,axis:Axis,operation:Operation,plot_type):
+    fig = None
     if plot_type == "stack_bar":
-        prepare_data = data.groupby([axis.stack,axis.x]).size().reset_index(name='COUNT')
+        plot_data = data.groupby([axis.stack,axis.x]).size().reset_index(name='COUNT')
+        bar_labels = natsorted(plot_data[axis.x].unique())
+        stack_labels = sorted(plot_data[axis.stack].unique())
+        bar_data = {}
+        for every_stack in stack_labels:
+            bar_data[every_stack] = []
+            for every_bar in bar_labels:
+                count = plot_data[(plot_data[axis.x] == every_bar) & (plot_data[axis.stack] == every_stack)]['COUNT'].values[0]
+                if count is None:
+                    count = 0
+                bar_data[every_stack].append(count)
+        bar_data = dict(sorted(bar_data.items(),key=lambda item:sum(item[1])/len(item[1]),reverse=True))
+        fig = plot_stack_bar(bar_labels,bar_data)
     elif plot_type == "scatter":
-        return data[[axis.x, axis.y]]
-    elif plot_type == "density":
-        pass
+        fig = plot_scatter(data[axis.x],data[axis.y])
+    elif plot_type == "single_ax_density":
+        # just x is numerical and operation is density
+        plot_data = data[axis.x].values.reshape(-1, 1)
+        fig = plot_density(plot_data)
+    elif plot_type == "multi_ax_density": 
+        plot_data = data.groupby(axis.x)[axis.y].apply(list)
+        fig = plot_density(plot_data,axis = axis)
     elif plot_type == "boxplot":
-        pass
-    elif plot_type == "bar":
-        pass
-    else: 
-        pass
+        sorted_key = natsorted(data[axis.x].unique())
+        sorted_data = data.set_index(axis.x).loc[sorted_key]
+        plot_data = [group[axis.y].dropna().to_list() for _,group in sorted_data.groupby(axis.x)]
+        fig = plot_boxplot(sorted_key,plot_data)
+    elif plot_type == "count_bar":
+        sorted_key = natsorted(data[axis.x].unique())
+        sorted_data = data.set_index(axis.x).loc[sorted_key]
+        plot_data = sorted_data.groupby(axis.x).size().reset_index(name='COUNT')
+        plot_bar(sorted_key,plot_data['COUNT'])
+    elif plot_type == "mean_bar":
+        sorted_key = natsorted(data[axis.x].unique())
+        sorted_data = data.set_index(axis.x).loc[sorted_key]
+        plot_data = sorted_data.groupby(axis.x)[axis.y].mean().reset_index(name='MEAN')
+        plot_bar(sorted_key,plot_data['MEAN'])
+    else :
+        raise ValueError(f"Unsupported plot type: {plot_type}")
+    return fig
+    
+    
+def save_fig(fig,save_path):
+    fig.savefig(save_path)
+    return True
 
 
-class VCFVISUAL:
-    def __init__(self,data:pd.DataFrame,expression:str) -> None:
-        self.data = data
-        if expression is None or expression == "":
-            raise ValueError("expression is empty")
-        self.expression = expression
+plot_data = VCFINFO('tests/data/all_without_bnd.vcf').get_vcf_info()
 
+axis = Axis(x="LEN",y="MISSING_RATE")
+axis.determine_variable_type(plot_data)
+operation = Operation("raw")
 
-    def parse_expression(self):
-        params = {}
-        for param in self.expression.split(","):
-            key, value = param.split("=")
-            params[key.strip()] = value.strip()
-        if len(params)  < 2:
-            raise ValueError("expression is not enough")
-        
-        # validate_x_keys(params.keys())
-        # checke values
-        validate_x_keys(params.values())
-        return params
+plot_type = PlotType.infer_plot_type(axis,operation)
 
-    def prepare_data(self,x,y,agg_fun,stack=None,windows_size = 1000000):
-        if stack is not None:
-            # groupBy is not none
-            grouped_data = self.data.groupby([stack,x]).size().reset_index(name='COUNT')
-            bar_labels = natsorted(grouped_data[x].unique())
-            stack_labels = sorted(grouped_data[stack].unique())
-            bar_data = {}
-            for every_stack in stack_labels:
-                bar_data[every_stack] = []
-                for every_bar in bar_labels:
-                    count = grouped_data[(grouped_data[x] == every_bar) & (grouped_data[stack] == every_stack)]['COUNT'].values[0]
-                    if count is None:
-                        count = 0
-                    bar_data[every_stack].append(count)
-            bar_data = dict(sorted(bar_data.items(),key=lambda item:sum(item[1])/len(item[1]),reverse=True))
-            return (0,bar_labels,bar_data)
-        else:
-            # stack is False
-            if x  not in self.data:
-                raise ValueError(f"{x} not found in data")
-            
-            if agg_fun == "COUNT":
-                group_data = self.data.copy()
-                plot_data = group_data.groupby(x).size().reset_index(name='COUNT')
-                plot_data = plot_data.sort_values(by=x, key=lambda col: natsorted(col.unique()))
-                x_data = plot_data[x].unique()
-                y_data = plot_data['COUNT']
-                return (1,x_data,y_data)
-            else:
-                if agg_fun == "DENSITY":
-                    bin_data = self.data.copy()
-                    bin_data["BIN"] = pd.cut(bin_data["START"], bins=range(0, bin_data["START"].max() + windows_size, windows_size), right=False, labels=range(0, bin_data["START"].max() , windows_size))
-                    density = bin_data.groupby([x,"BIN"]).size().reset_index(name="COUNT")
-                    # density = density.sort_values(by=x, key=lambda col: natsorted(col.unique()))
-                    return (2,density,None)
-                else:
-                    pass
-
-    def plot(self):
-        params = self.parse_expression()
-        x = params["x"]
-        y = params["y"]
-        agg_fun = params["agg_fun"]
-        stack = params.get("stack",None)
-        windows_size = params.get("windows_size",1000000)
-        idx,data_1,data_2 = self.prepare_data(x,
-                                              y,
-                                              agg_fun,
-                                              stack,
-                                              windows_size)
-        
-        if idx == 0:
-            plot.plot_stack_bar(data_1,data_2)
-            pass
-        elif idx == 1:
-            plot.plot_bar(data_1,data_2)
-            pass
-        else:
-            plot.plot_density(data_1,x,win_size=windows_size)
-            pass
-        
+fig = data_to_plot(plot_data,axis,operation,plot_type)
+save_fig(fig,"tests/test_pic/test.png")

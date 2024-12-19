@@ -86,7 +86,9 @@ def plot_bar(x_data,y_data):
     fig,ax = plt.subplots(figsize=(8,6),dpi=500)
     ax.bar(x_data,y_data)
     ax.set_xticklabels(x_data,rotation=-75,fontsize=8)
-    ax.set_xlim(left=-0.5)
+    ax.set_xlim(left=-1)
+    ax.set_ylim(bottom=-50)
+    fig.tight_layout()
     return fig
     
 # def plot_density(density,x,win_size):

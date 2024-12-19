@@ -5,7 +5,10 @@ from plot import *
 from vcftools import VCFINFO
 
 ALLOWED_VARIABLES = {"CHR", "MAF", "LEN", "AAF", "TYPE", "MISSING_RATE"}
-SUPPORTED_OPERATIONS = ["count", "sum", "mean", "density"]
+SUPPORTED_OPERATIONS = ["count", "sum", "mean", "density","stack","raw"]
+PLOT_TYPE={"stack_bar","scatter","density","boxplot","bar","histogram"}
+
+
 
 class Axis:
     def __init__(self,x,y=None,stack=None) -> None:
@@ -52,11 +55,93 @@ class Axis:
 
 class Operation:
     def __init__(self,operation:str) -> None:
-        if operation in SUPPORTED_OPERATIONS:
+        if operation not in SUPPORTED_OPERATIONS:
             raise ValueError(f"operation: '{operation}' is invalid!")
         self.operation_type = operation
     
 class PlotType:
+    
+    @staticmethod
+    def validate_plot_type(plot_type:str,axis:Axis,operation:Operation):
+        """this function accept the plot-type from user and check if it is valid
+        Args:
+            plot_type (str): the plot type from user
+            axis (Axis): the axis object
+            operation (Operation): the operation object
+        """
+        if plot_type not in PLOT_TYPE:
+            raise ValueError(f"Unsupported plot type: {plot_type}")
+        if plot_type == "stack_bar":
+            if operation.operation_type != "stack":
+                raise ValueError("stack bar plot only support stack operation!")
+            if axis.stack is None:
+                raise ValueError("stack bar plot need stack variable!")
+            if axis.y is not None:
+                raise ValueError("stack bar plot doesn't need y variable!")
+            if axis.stack_type != "categorical" or axis.x_type != "categorical":
+                raise ValueError("stack bar plot only support categorical variable!")
+            return "stack_bar"
+        
+        # scatter plot
+        elif plot_type == "scatter":
+            if operation.operation_type != "raw":
+                raise ValueError("scatter plot only support raw operation!")
+            if axis.y is None:
+                raise ValueError("scatter plot need y variable!")
+            if axis.x_type != "numerical" or axis.y_type != "numerical":
+                raise ValueError("scatter plot only support numerical variable!")
+            return "scatter"
+        
+        # histogram plot
+        elif plot_type == "histogram":
+            if operation.operation_type != "density":
+                raise ValueError("histogram plot only support density operation!")
+            if axis.y is None:
+                raise ValueError("histogram plot need y variable!")
+            if axis.x_type != "numerical" or axis.y_type != "numerical":
+                raise ValueError("histogram plot only support numerical variable!")
+            return "histogram"
+        
+        # boxplot plot
+        elif plot_type == "boxplot":
+            if operation.operation_type != "raw":
+                raise ValueError("boxplot plot only support raw operation!")
+            if axis.y is None:
+                raise ValueError("boxplot plot need y variable!")
+            if axis.x_type != "categorical" or axis.y_type != "numerical":
+                raise ValueError("boxplot plot only support numerical y variable and categorical x variable!")
+            return "boxplot"
+            
+        # bar chart
+        elif plot_type == "bar":
+            if operation.operation_type == "count":
+                if axis.y is not None:
+                    raise ValueError("bar plot doesn't need y variable!")
+                if axis.x_type != "categorical":
+                    raise ValueError("bar plot only support categorical x variable!")
+                return "count_bar"
+            elif operation.operation_type == "mean":
+                if axis.y is None:
+                    raise ValueError("mean bar plot need y variable!")
+                if axis.x_type != "categorical" or axis.y_type != "numerical":
+                    raise ValueError("mean bar plot only support numerical y variable and categorical x variable!")
+                return "mean_bar"
+            else:
+                raise ValueError("UNKNOWN PLOT TYPE!")
+            
+        elif plot_type == "density":
+            if operation.operation_type == "density":
+                if axis.x_type == "numerical" and axis.y is None:
+                    return "single_ax_density"
+                elif axis.x_type == "categorical" and axis.y_type == "numerical":
+                    return "multi_ax_density"
+                else:
+                    raise ValueError("Density plot only support numerical x variable and numerical y variable or categorical y variable!")
+            else:
+                raise ValueError("Density plot is only supported with 'density' operation.")
+        else:
+            raise ValueError(f"Unknown plot type: {plot_type}")
+        
     @staticmethod
     def infer_plot_type(axis:Axis,operation:Operation):
           # axis检验已经在上级方法中完成
@@ -88,7 +173,7 @@ class PlotType:
                 return "single_ax_density"
             else:
                 raise ValueError("UNKNOWN PLOT TYPE!")
-        
+ 
 
 def data_to_plot(data:pd.DataFrame,axis:Axis,operation:Operation,plot_type):
     fig = None
@@ -124,12 +209,14 @@ def data_to_plot(data:pd.DataFrame,axis:Axis,operation:Operation,plot_type):
         sorted_key = natsorted(data[axis.x].unique())
         sorted_data = data.set_index(axis.x).loc[sorted_key]
         plot_data = sorted_data.groupby(axis.x).size().reset_index(name='COUNT')
-        plot_bar(sorted_key,plot_data['COUNT'])
+        fig = plot_bar(sorted_key,plot_data['COUNT'])
     elif plot_type == "mean_bar":
         sorted_key = natsorted(data[axis.x].unique())
         sorted_data = data.set_index(axis.x).loc[sorted_key]
         plot_data = sorted_data.groupby(axis.x)[axis.y].mean().reset_index(name='MEAN')
-        plot_bar(sorted_key,plot_data['MEAN'])
+        fig = plot_bar(sorted_key,plot_data['MEAN'])
+    elif plot_type == "histogram":
+        pass
     else :
         raise ValueError(f"Unsupported plot type: {plot_type}")
     return fig
@@ -142,11 +229,12 @@ def save_fig(fig,save_path):
 
 plot_data = VCFINFO('tests/data/all_without_bnd.vcf').get_vcf_info()
 
-axis = Axis(x="LEN",y="MISSING_RATE")
+axis = Axis(x="LEN",y="AAF")
 axis.determine_variable_type(plot_data)
 operation = Operation("raw")
 
-plot_type = PlotType.infer_plot_type(axis,operation)
+# plot_type = PlotType.infer_plot_type(axis,operation)
+plot_type = PlotType.validate_plot_type("scatter",axis,operation)
 
-fig = data_to_plot(plot_data,axis,operation,plot_type)
+fig = data_to_plot(plot_data,axis,operation,plot_type)        
 save_fig(fig,"tests/test_pic/test.png")

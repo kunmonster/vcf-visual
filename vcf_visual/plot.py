@@ -39,19 +39,25 @@ def plot_density(data,**kwargs):
         axes = np.array(axes).flatten()  # 展平为一维数组，便于迭代处理
 
             # 设置统一的 x 轴范围
-        min_value = data[axis.y].min()
-        max_value = data[axis.y].max()
-        X_plot = np.linspace(min_value, max_value, 1000).reshape(-1, 1)
+        
+        min_value = np.array(data["DENSITY"].min()).min()
+        max_value = np.array(data["DENSITY"].max()).max()
+        X_plot = np.linspace(min_value, max_value, 10000).reshape(-1, 1)
 
+        
+        
             # 绘制每个分组的密度图
-        for idx, (group, values) in enumerate(data.items()):
-            kde = KernelDensity(kernel="gaussian", bandwidth=0.5).fit(np.array(values).reshape(-1, 1))
+        for idx, row in data.iterrows():
+            group = row[axis.x]
+            values = row["DENSITY"]
+            
+            kde = KernelDensity(kernel="gaussian", bandwidth=50).fit(np.array(values).reshape(-1, 1))
             log_density = kde.score_samples(X_plot)
 
             axes[idx].plot(X_plot, np.exp(log_density), label=f"{group}")
-            axes[idx].set_title(f"Group: {group}")
+            axes[idx].set_title(f"{axis.x}   {group}")
             axes[idx].legend()
-            axes[idx].grid(True)
+            axes[idx].grid(False)
 
             # 移除未使用的子图
         for ax in axes[num_groups:]:
@@ -87,7 +93,7 @@ def plot_bar(x_data,y_data):
     ax.bar(x_data,y_data)
     ax.set_xticklabels(x_data,rotation=-75,fontsize=8)
     ax.set_xlim(left=-1)
-    ax.set_ylim(bottom=-50)
+    # ax.set_ylim(bottom=-50)
     fig.tight_layout()
     return fig
     

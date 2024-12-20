@@ -4,7 +4,7 @@ from plot import *
 
 from vcftools import VCFINFO
 
-ALLOWED_VARIABLES = {"CHR", "MAF", "LEN", "AAF", "TYPE", "MISSING_RATE"}
+ALLOWED_VARIABLES = {"CHR", "MAF", "LEN", "AAF", "TYPE", "MISSING_RATE","START"}
 SUPPORTED_OPERATIONS = ["count", "sum", "mean", "density","stack","raw"]
 PLOT_TYPE={"stack_bar","scatter","density","boxplot","bar","histogram"}
 
@@ -198,7 +198,7 @@ def data_to_plot(data:pd.DataFrame,axis:Axis,operation:Operation,plot_type):
         plot_data = data[axis.x].values.reshape(-1, 1)
         fig = plot_density(plot_data)
     elif plot_type == "multi_ax_density": 
-        plot_data = data.groupby(axis.x)[axis.y].apply(list)
+        plot_data = data.groupby(axis.x)[axis.y].apply(list).reset_index(name='DENSITY')
         fig = plot_density(plot_data,axis = axis)
     elif plot_type == "boxplot":
         sorted_key = natsorted(data[axis.x].unique())
@@ -229,12 +229,12 @@ def save_fig(fig,save_path):
 
 plot_data = VCFINFO('tests/data/all_without_bnd.vcf').get_vcf_info()
 
-axis = Axis(x="LEN",y="AAF")
+axis = Axis(x="CHR",y="START")
 axis.determine_variable_type(plot_data)
-operation = Operation("raw")
+operation = Operation("density")
 
 # plot_type = PlotType.infer_plot_type(axis,operation)
-plot_type = PlotType.validate_plot_type("scatter",axis,operation)
+plot_type = PlotType.validate_plot_type("density",axis,operation)
 
 fig = data_to_plot(plot_data,axis,operation,plot_type)        
 save_fig(fig,"tests/test_pic/test.png")

@@ -1,10 +1,11 @@
 import math
 from matplotlib import pyplot as plt
 from natsort import natsorted
+from sklearn.neighbors import KernelDensity
 import numpy as np
 import matplotlib.ticker as mticker
 import matplotlib as mpl
-from sklearn.neighbors import KernelDensity
+from util.utils import get_unit
 
 
 def plot_scatter(x_data,y_data):
@@ -30,32 +31,29 @@ def plot_density(data,**kwargs):
         group_keys = data.index.tolist()
         num_groups = len(group_keys)
 
-            # 动态计算行数和列数（尽量接近正方形布局）
+         # 动态计算行数和列数（尽量接近正方形布局）
         cols = math.ceil(math.sqrt(num_groups))
         rows = math.ceil(num_groups / cols)
 
-            # 创建子图网格
+        # 创建子图网格
         fig, axes = plt.subplots(rows, cols, figsize=(5 * cols, 4 * rows), sharex=True, sharey=True)
         axes = np.array(axes).flatten()  # 展平为一维数组，便于迭代处理
 
-            # 设置统一的 x 轴范围
+        # 设置统一的 x 轴范围
         
         min_value = np.array(data["DENSITY"].min()).min()
         max_value = np.array(data["DENSITY"].max()).max()
-        X_plot = np.linspace(min_value, max_value, 10000).reshape(-1, 1)
+        X_plot = np.linspace(min_value, max_value, 1000).reshape(-1, 1)
 
-        
-        
-            # 绘制每个分组的密度图
+        # 绘制每个分组的密度图
         for idx, row in data.iterrows():
             group = row[axis.x]
             values = row["DENSITY"]
-            
-            kde = KernelDensity(kernel="gaussian", bandwidth=50).fit(np.array(values).reshape(-1, 1))
+            kde = KernelDensity(kernel="gaussian", bandwidth=100).fit(np.array(values).reshape(-1, 1))
             log_density = kde.score_samples(X_plot)
 
             axes[idx].plot(X_plot, np.exp(log_density), label=f"{group}")
-            axes[idx].set_title(f"{axis.x}   {group}")
+            axes[idx].set_title(f"{group}")
             axes[idx].legend()
             axes[idx].grid(False)
 
@@ -89,35 +87,34 @@ def plot_stack_bar(bar_labels,bar_data):
     return fig
 
 def plot_bar(x_data,y_data):
-    fig,ax = plt.subplots(figsize=(8,6),dpi=500)
+    fig,ax = plt.subplots(figsize=(10,8),dpi=500)
     ax.bar(x_data,y_data)
     ax.set_xticklabels(x_data,rotation=-75,fontsize=8)
     ax.set_xlim(left=-1)
-    # ax.set_ylim(bottom=-50)
     fig.tight_layout()
     return fig
     
-# def plot_density(density,x,win_size):
-#     group_key = natsorted(density[x].unique())
-#     cols = 3
-#     rows = math.ceil(len(group_key) / cols)
-#     mpl.rcParams['axes.formatter.useoffset'] = False
-#     mpl.rcParams['axes.formatter.use_mathtext'] = False
-#     fig, ax = plt.subplots(rows, cols, figsize=(15, len(group_key)*0.5), sharex=True)
-#     ax = ax.flatten() 
-#     for i in range(len(ax)):
-#         if i < len(group_key):
-#             cur_key = group_key[i]
-#             cur_data = density[density[x] == cur_key]
-#             ax[i].bar(cur_data["BIN"], cur_data["COUNT"], width=win_size, color="skyblue", edgecolor="black",alpha=0.8)
-#             ax[i].set_title(f"{cur_key}", loc="right", fontsize=10)
-#             ax[i].set_xlim(left=-0.5)
-#             ax[i].tick_params(axis="both", labelsize=8)
-#             ax[i].xaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f'{x // win_size} '))
-#         else:
-#             ax[i].axis("off") 
-#     fig.supxlabel("Position (Mb)", fontsize=14)
-#     fig.supylabel("Variant Count", fontsize=14)
-#     fig.suptitle("Structural Variant Distribution by Chromosome", fontsize=16)
-#     plt.tight_layout(rect=[0, 0, 1, 1])
-#     fig.savefig('./test.png')
+def plot_histogram(density,x,win_size):
+    group_key = natsorted(density[x].unique())
+    cols = 3
+    rows = math.ceil(len(group_key) / cols)
+    mpl.rcParams['axes.formatter.useoffset'] = False
+    mpl.rcParams['axes.formatter.use_mathtext'] = False
+    fig, ax = plt.subplots(rows, cols, figsize=(15, len(group_key)*0.5), sharex=True)
+    ax = ax.flatten() 
+    for i in range(len(ax)):
+        if i < len(group_key):
+            cur_key = group_key[i]
+            cur_data = density[density[x] == cur_key]
+            ax[i].bar(cur_data["BIN"], cur_data["COUNT"], width=win_size, color="skyblue", edgecolor="black",alpha=0.8)
+            ax[i].set_title(f"{cur_key}", loc="right", fontsize=10)
+            ax[i].set_xlim(left=-0.5)
+            ax[i].tick_params(axis="both", labelsize=8)
+            ax[i].xaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f'{x // win_size} '))
+        else:
+            ax[i].axis("off") 
+    unit_label  = get_unit(win_size)
+    fig.supxlabel(f'Position ({unit_label})', fontsize=14)
+    fig.supylabel("Variant Count", fontsize=14)
+    plt.tight_layout(rect=[0, 0, 1, 1])
+    return fig

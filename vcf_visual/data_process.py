@@ -1,3 +1,4 @@
+from tkinter import font
 import pandas as pd 
 from natsort import natsorted
 from plot import *
@@ -8,6 +9,8 @@ ALLOWED_VARIABLES = {"CHR", "MAF", "LEN", "AAF", "TYPE", "MISSING_RATE","START"}
 SUPPORTED_OPERATIONS = ["count", "sum", "mean", "density","stack","raw"]
 PLOT_TYPE={"stack_bar","scatter","density","boxplot","bar","histogram"}
 
+
+# filter operation for cateogrical and numerical variables
 
 
 class Axis:
@@ -60,7 +63,6 @@ class Operation:
         self.operation_type = operation
     
 class PlotType:
-    
     @staticmethod
     def validate_plot_type(plot_type:str,axis:Axis,operation:Operation):
         """this function accept the plot-type from user and check if it is valid
@@ -98,7 +100,7 @@ class PlotType:
                 raise ValueError("histogram plot only support density operation!")
             if axis.y is None:
                 raise ValueError("histogram plot need y variable!")
-            if axis.x_type != "numerical" or axis.y_type != "numerical":
+            if axis.x_type != "categorical" or axis.y_type != "numerical":
                 raise ValueError("histogram plot only support numerical variable!")
             return "histogram"
         
@@ -142,37 +144,6 @@ class PlotType:
         else:
             raise ValueError(f"Unknown plot type: {plot_type}")
         
-    @staticmethod
-    def infer_plot_type(axis:Axis,operation:Operation):
-          # axis检验已经在上级方法中完成
-        if axis.stack is not None:
-            return "stack_bar"
-        if axis.y is not None:
-            if operation.operation_type == "raw":
-                if axis.y_type == "numerical" and axis.x_type == "numerical":
-                    return "scatter"
-                elif axis.x_type == "categorical" and axis.y_type == "numerical":
-                    return "boxplot"
-                else:
-                    raise ValueError("UNKNOWN PLOT TYPE!")
-            elif operation.operation_type == "mean":
-                if axis.x_type == "categorical" and axis.y_type == "numerical":
-                    return "mean_bar"
-                else:
-                    raise ValueError("UNKNOWN PLOT TYPE!")
-            elif operation.operation_type == "density":
-                # this situation is fit to multi-ax
-                if axis.x_type == "categorical" and axis.y_type == "numerical":
-                    return "multi_ax_density"
-            else:
-                raise ValueError("UNKNOWN PLOT TYPE!")        
-        else:
-            if operation.operation_type == "count" and axis.x_type == "categorical":
-                return "count_bar"
-            elif operation.operation_type == "density" and axis.x_type == "numerical":
-                return "single_ax_density"
-            else:
-                raise ValueError("UNKNOWN PLOT TYPE!")
  
 
 def data_to_plot(data:pd.DataFrame,axis:Axis,operation:Operation,plot_type):
@@ -191,8 +162,10 @@ def data_to_plot(data:pd.DataFrame,axis:Axis,operation:Operation,plot_type):
                 bar_data[every_stack].append(count)
         bar_data = dict(sorted(bar_data.items(),key=lambda item:sum(item[1])/len(item[1]),reverse=True))
         fig = plot_stack_bar(bar_labels,bar_data)
+        fig.suptitle(f"Stack Bar Plot of {axis.x} by {axis.stack}",fontsize=15)
     elif plot_type == "scatter":
         fig = plot_scatter(data[axis.x],data[axis.y])
+        fig.suptitle(f"Scatter Plot of {axis.x} by {axis.y}",fontsize=15)
     elif plot_type == "single_ax_density":
         # just x is numerical and operation is density
         plot_data = data[axis.x].values.reshape(-1, 1)
@@ -200,41 +173,49 @@ def data_to_plot(data:pd.DataFrame,axis:Axis,operation:Operation,plot_type):
     elif plot_type == "multi_ax_density": 
         plot_data = data.groupby(axis.x)[axis.y].apply(list).reset_index(name='DENSITY')
         fig = plot_density(plot_data,axis = axis)
+        fig.suptitle(f'Density Plot of {axis.y} by {axis.x}',fontsize=15)
     elif plot_type == "boxplot":
         sorted_key = natsorted(data[axis.x].unique())
         sorted_data = data.set_index(axis.x).loc[sorted_key]
         plot_data = [group[axis.y].dropna().to_list() for _,group in sorted_data.groupby(axis.x)]
         fig = plot_boxplot(sorted_key,plot_data)
+        fig.suptitle(f'Boxplot of {axis.y} by {axis.x}',fontsize=15)
     elif plot_type == "count_bar":
         sorted_key = natsorted(data[axis.x].unique())
         sorted_data = data.set_index(axis.x).loc[sorted_key]
         plot_data = sorted_data.groupby(axis.x).size().reset_index(name='COUNT')
         fig = plot_bar(sorted_key,plot_data['COUNT'])
+        fig.suptitle(f'Count by {axis.x}',fontsize=15)
     elif plot_type == "mean_bar":
         sorted_key = natsorted(data[axis.x].unique())
         sorted_data = data.set_index(axis.x).loc[sorted_key]
         plot_data = sorted_data.groupby(axis.x)[axis.y].mean().reset_index(name='MEAN')
         fig = plot_bar(sorted_key,plot_data['MEAN'])
+        fig.suptitle(f'Mean of {axis.y} by {axis.x}',fontsize=15)
     elif plot_type == "histogram":
-        pass
+        data["BIN"] = pd.cut(data[axis.y], bins=range(0, data[axis.y].max() + 1_000_000, 1_000_000), right=False, labels=range(0, data[axis.y].max(), 1_000_000))
+        density = data.groupby(["CHR", "BIN"]).size().reset_index(name="COUNT")
+        fig = plot_histogram(density,axis.x,1_000_000)
+        fig.suptitle(f'Distribution by {axis.x}',fontsize=15)
     else :
         raise ValueError(f"Unsupported plot type: {plot_type}")
     return fig
     
     
 def save_fig(fig,save_path):
+    fig.tight_layout(rect=[0, 0, 0.98, 0.98])
     fig.savefig(save_path)
-    return True
+    return True 
 
 
-plot_data = VCFINFO('tests/data/all_without_bnd.vcf').get_vcf_info()
+plot_data = VCFINFO('/home/fkj/py_project/statvcf-sv/tests/data/all_without_bnd.vcf').get_vcf_info()
 
 axis = Axis(x="CHR",y="START")
 axis.determine_variable_type(plot_data)
 operation = Operation("density")
 
 # plot_type = PlotType.infer_plot_type(axis,operation)
-plot_type = PlotType.validate_plot_type("density",axis,operation)
+plot_type = PlotType.validate_plot_type("histogram",axis,operation)
 
 fig = data_to_plot(plot_data,axis,operation,plot_type)        
 save_fig(fig,"tests/test_pic/test.png")

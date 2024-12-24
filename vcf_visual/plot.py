@@ -5,7 +5,7 @@ from sklearn.neighbors import KernelDensity
 import numpy as np
 import matplotlib.ticker as mticker
 import matplotlib as mpl
-from util.utils import get_unit
+from vcf_visual.utils import get_unit
 
 
 def plot_scatter(x_data,y_data):
@@ -13,6 +13,40 @@ def plot_scatter(x_data,y_data):
     ax.scatter(x_data,y_data)
     return fig
 
+
+         
+def plot_boxplot(labels,data):
+    fig,ax = plt.subplots(figsize=(10,6),dpi=500)
+    ax.boxplot(data,labels=labels,patch_artist=True,showfliers=False,showmeans=True)
+    ax.set_xticklabels(labels,rotation=-75,fontsize=8)
+    fig.tight_layout()
+    return fig
+
+
+def plot_stack_bar(bar_labels,bar_data):
+    fig,ax = plt.subplots(figsize=(16,10),dpi=300)
+    bottom = np.zeros(len(bar_labels))
+    sum_val_array = np.zeros(len(bar_labels))
+    for label,data in bar_data.items():
+        sum_val_array += np.array(data)
+        ax.bar(bar_labels,data,label=label,bottom=bottom,width=0.7,alpha=0.9)
+        bottom += data
+    sum_val = max(sum_val_array)
+    ax.set_ylim(-0.03*sum_val,sum_val+0.1*sum_val)
+    ax.set_xticklabels(bar_labels,rotation=-75,fontsize=8)
+    ax.legend()
+    return fig
+
+def plot_bar(x_data,y_data):
+    fig,ax = plt.subplots(figsize=(10,8),dpi=500)
+    ax.bar(x_data,y_data)
+    max_y = max(y_data)
+    ax.set_ylim(-0.03*max_y,max_y+0.1*max_y)
+    ax.set_xticklabels(x_data,rotation=-75,fontsize=8)
+    fig.tight_layout()
+    return fig
+    
+    
 def plot_density(data,**kwargs):
     if isinstance(data,list):
        # single ax
@@ -65,35 +99,6 @@ def plot_density(data,**kwargs):
         fig.text(0.06, 0.5, 'Density', ha='center', va='center', rotation='vertical')
         return fig
 
-         
-def plot_boxplot(labels,data):
-    fig,ax = plt.subplots(figsize=(10,6),dpi=500)
-    ax.boxplot(data,labels=labels,patch_artist=True,showfliers=False,showmeans=True)
-    ax.set_xticklabels(labels,rotation=-75,fontsize=8)
-    fig.tight_layout()
-    return fig
-
-
-def plot_stack_bar(bar_labels,bar_data):
-    fig,ax = plt.subplots(figsize=(16,10),dpi=300)
-    bottom = np.zeros(len(bar_labels))
-    for label,data in bar_data.items():
-        ax.bar(bar_labels,data,label=label,bottom=bottom,width=0.7,alpha=0.9)
-        bottom += data
-    ax.set_xticklabels(bar_labels,rotation=-75,fontsize=8)
-    ax.set_xlim(left=-0.5)
-    ax.set_ylim(bottom=-50)
-    ax.legend()
-    return fig
-
-def plot_bar(x_data,y_data):
-    fig,ax = plt.subplots(figsize=(10,8),dpi=500)
-    ax.bar(x_data,y_data)
-    ax.set_xticklabels(x_data,rotation=-75,fontsize=8)
-    ax.set_xlim(left=-1)
-    fig.tight_layout()
-    return fig
-    
 def plot_histogram(density,x,win_size):
     group_key = natsorted(density[x].unique())
     cols = 3
@@ -108,7 +113,6 @@ def plot_histogram(density,x,win_size):
             cur_data = density[density[x] == cur_key]
             ax[i].bar(cur_data["BIN"], cur_data["COUNT"], width=win_size, color="skyblue", edgecolor="black",alpha=0.8)
             ax[i].set_title(f"{cur_key}", loc="right", fontsize=10)
-            ax[i].set_xlim(left=-0.5)
             ax[i].tick_params(axis="both", labelsize=8)
             ax[i].xaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f'{x // win_size} '))
         else:

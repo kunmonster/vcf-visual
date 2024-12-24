@@ -1,6 +1,6 @@
 import unittest
 from vcf_visual.vcftools import VCFINFO
-from vcf_visual.data_process import Axis
+from vcf_visual.core import Axis
 class TestAxis(unittest.TestCase):
     def setUp(self) -> None:
         print("======test start======")

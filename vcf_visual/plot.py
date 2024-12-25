@@ -29,19 +29,21 @@ def plot_stack_bar(bar_labels,bar_data):
     sum_val_array = np.zeros(len(bar_labels))
     for label,data in bar_data.items():
         sum_val_array += np.array(data)
-        ax.bar(bar_labels,data,label=label,bottom=bottom,width=0.7,alpha=0.9)
+        ax.bar(bar_labels,data,label=label,bottom=bottom,width=0.8,alpha=0.9)
         bottom += data
     sum_val = max(sum_val_array)
     ax.set_ylim(-0.03*sum_val,sum_val+0.1*sum_val)
     ax.set_xticklabels(bar_labels,rotation=-75,fontsize=8)
+    ax.set_xlim(-0.5,len(bar_labels)-0.2)
     ax.legend()
     return fig
 
 def plot_bar(x_data,y_data):
-    fig,ax = plt.subplots(figsize=(10,8),dpi=500)
-    ax.bar(x_data,y_data)
+    fig,ax = plt.subplots(figsize=(16,10),dpi=500)
+    ax.bar(x_data,y_data,width=0.8,alpha=0.9)
     max_y = max(y_data)
     ax.set_ylim(-0.03*max_y,max_y+0.1*max_y)
+    ax.set_xlim(-0.5,len(x_data)-0.2)
     ax.set_xticklabels(x_data,rotation=-75,fontsize=8)
     fig.tight_layout()
     return fig

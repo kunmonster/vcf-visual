@@ -79,8 +79,16 @@ def print_var_info():
     
 
 
-def save_fig(fig,save_path):
+def save_fig(fig,save_path,file_type="PNG"):
+    """ save the figure to a file in the specified format at the specified path
+    Args:
+        fig: the figure object to be saved
+        save_path: the path to save the figure
+        file_type: the format of the saved figure, e.g. "png", "pdf", "svg","tiff"
+    return:
+        True if the figure is saved successfully
+    """
     fig.tight_layout(rect=[0, 0, 0.98, 0.98])
     fig.savefig(save_path)
-    return True 
+    return True
 

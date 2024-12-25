@@ -1,7 +1,7 @@
 import sys
 import pandas as pd 
 from natsort import natsorted
-
+import matplotlib as mpl
 from vcf_visual.vcftools import VCFINFO
 from vcf_visual.plot import *
 from vcf_visual.models import Axis,Operation,Expression,PlotType
@@ -11,6 +11,7 @@ from vcf_visual.utils import print_var_info
 
 def data_to_plot(data:pd.DataFrame,axis:Axis,operation:Operation,plot_type):
     fig = None
+    mpl.use("Agg")
     if plot_type == "stack_bar":
         plot_data = data.groupby([axis.stack,axis.x]).size().reset_index(name='COUNT')
         bar_labels = natsorted(plot_data[axis.x].unique())
@@ -64,7 +65,7 @@ def data_to_plot(data:pd.DataFrame,axis:Axis,operation:Operation,plot_type):
         raise ValueError(f"Unsupported plot type: {plot_type}")
     return fig
     
-def plot_save(vcf_file:str,exp:str,plot_path:str,plot_type:str,plot_title:str=None,file_type:str=None,regions:str=None):
+def plot_save(vcf_file:str,exp:str,plot_path:str,plot_type:str,plot_title:str=None,file_type:str=None):
     if plot_type is None:
         raise ValueError("plot type is required!")
     plot_data = VCFINFO(vcf_file).get_vcf_info()
@@ -84,20 +85,18 @@ def plot_save(vcf_file:str,exp:str,plot_path:str,plot_type:str,plot_title:str=No
     
 
 def main_fun(argv):
-    know_args, remaining_args = parser.parse_known_args(argv)
-    # 检查是否提供 --help
-    if know_args.support:
-        print_var_info()
-        sys.exit(0)
-    
-
-    params = know_args
-    if not params:
+    if argv is None or len(argv) == 0:
         parser.print_help()
         sys.exit(1)
+        
+    params, _ = parser.parse_known_args(argv)
+    # 检查是否提供 --help
+    if params.support:
+        print_var_info()
+        sys.exit(0)
 
     try:
-        plot_save(params.vcf_file,params.exp,params.plot_path,params.plot_type,params.plot_title,params.file_type,params.regions)
+        plot_save(params.vcf_file,params.exp,params.plot_path,params.plot_type,params.plot_title,params.file_type)
     except Exception as e:
         print(f"Error: {e}")
         sys.exit(1)

@@ -173,7 +173,7 @@ cython_debug/
 *.tiff
 *.svg
 
-
+example/data/*
 tests/data/
 tests/*.png
 .vscode/

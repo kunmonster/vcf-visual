@@ -1,13 +1,14 @@
 import sys
+import time
 import pandas as pd 
 from natsort import natsorted
 import matplotlib as mpl
-from vcf_visual.vcftools import VCFINFO
-from vcf_visual.plot import *
-from vcf_visual.models import Axis,Operation,Expression,PlotType
-from vcf_visual.utils import save_fig,ALLOWED_VARIABLES,SUPPORTED_OPERATIONS
-from vcf_visual.args import parser
-from vcf_visual.utils import print_var_info
+from vcftools import VCFINFO
+from plot import *
+from models import Axis,Operation,Expression,PlotType
+from utils import save_fig,ALLOWED_VARIABLES,SUPPORTED_OPERATIONS
+from args import parser
+from utils import print_var_info
 
 def data_to_plot(data:pd.DataFrame,axis:Axis,operation:Operation,plot_type):
     fig = None
@@ -66,13 +67,21 @@ def data_to_plot(data:pd.DataFrame,axis:Axis,operation:Operation,plot_type):
     return fig
     
 def plot_save(vcf_file:str,exp:str,plot_path:str,plot_type:str,plot_title:str=None,file_type:str=None):
+    
     if plot_type is None:
         raise ValueError("plot type is required!")
+    start_time = time.time()
     plot_data = VCFINFO(vcf_file).get_vcf_info()
+    end_time = time.time()
+    print("耗时: {:.2f}秒".format(end_time - start_time))
+    exit()
     exp_class = Expression(exp)
     params  = exp_class.parse_expression()
     x = params.get("x")
     y = params.get("y")
+    
+    # TODO: 检查x,y字段是否在vcf文件中,或者这一步直接根据该字段打开vcf文件
+    
     stack = params.get("stack")
     operation = Operation(params.get("operation"))
     axis = Axis(x=x,y=y,stack=stack)
@@ -80,7 +89,8 @@ def plot_save(vcf_file:str,exp:str,plot_path:str,plot_type:str,plot_title:str=No
     plot_type = PlotType.validate_plot_type(plot_type,axis,operation)
     fig = data_to_plot(plot_data,axis,operation,plot_type)      
     if plot_title is not None:
-        fig.suptitle(plot_title,fontsize=15) 
+        fig.suptitle(plot_title,fontsize=15)
+    print(fig)
     save_fig(fig,plot_path)
     
 
@@ -88,13 +98,13 @@ def main_fun(argv):
     if argv is None or len(argv) == 0:
         parser.print_help()
         sys.exit(1)
-        
     params, _ = parser.parse_known_args(argv)
     # 检查是否提供 --help
     if params.support:
         print_var_info()
         sys.exit(0)
-
+    if "file_type"  not in params:
+        params.file_type = None
     try:
         plot_save(params.vcf_file,params.exp,params.plot_path,params.plot_type,params.plot_title,params.file_type)
     except Exception as e:

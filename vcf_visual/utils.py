@@ -1,5 +1,4 @@
 from numbers import Number
-from matplotlib import table
 from rich.console import Console
 from rich.table import Table
 
@@ -79,7 +78,7 @@ def print_var_info():
     
 
 
-def save_fig(fig,save_path,file_type="PNG"):
+def save_fig(fig,save_path,file_type=None):
     """ save the figure to a file in the specified format at the specified path
     Args:
         fig: the figure object to be saved
@@ -89,6 +88,9 @@ def save_fig(fig,save_path,file_type="PNG"):
         True if the figure is saved successfully
     """
     fig.tight_layout(rect=[0, 0, 0.98, 0.98])
-    fig.savefig(save_path)
+    if file_type is None or file_type.strip() == "":
+        fig.savefig(save_path)
+    else:
+        fig.savefig(save_path, format=file_type)
     return True
 

@@ -1,4 +1,4 @@
-from vcf_visual.utils import ALLOWED_VARIABLES,SUPPORTED_OPERATIONS,EXPRESSION_KEYS,PLOT_TYPE
+from utils import ALLOWED_VARIABLES,SUPPORTED_OPERATIONS,EXPRESSION_KEYS,PLOT_TYPE
 
 class Axis:
     def __init__(self,x,y=None,stack=None) -> None:

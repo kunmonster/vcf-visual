@@ -1,4 +1,4 @@
-from cyvcf2 import VCF
+# from cyvcf2 import VCF
 import allel
 
 
@@ -64,20 +64,21 @@ class VCFINFO:
         ref = self.callset['variants/REF']
         alt = self.callset['variants/ALT']
         var_type = []
-        for item in zip(ref,alt):
-            if len(item[1]) > 1:
+        for ref_str , alt_arr in zip(ref,alt):
+            alt_arr = list(filter(None,alt_arr))
+            if len(alt_arr) > 1:
                 # multi allele
-                var_type.append('COMPLEX')
+                var_type.append('complex')
             else:
                 # just one allele
-                if len(item[0]) > len(item[1]):
-                    var_type.append('DEL')
-                elif len(item[0]) < len(item[1]):
-                    var_type.append('INS')
-                elif is_transition(item[0],item[1]):
-                    var_type.append('TRANSITION')
+                if len(ref_str) > len(alt_arr[0]):
+                    var_type.append('deletion')
+                elif len(ref_str) < len(alt_arr[0]):
+                    var_type.append('insertion')
+                elif is_transition(ref_str,alt_arr[0]):
+                    var_type.append('transition')
                 else:
-                    var_type.append('TRANSVERSION')
+                    var_type.append('transversion')
         return var_type
     def get_var_info(self):
         pass

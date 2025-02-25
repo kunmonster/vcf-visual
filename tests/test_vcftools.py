@@ -1,14 +1,19 @@
-import array
 import unittest
 
 from vcf_visual.vcftools import VCFINFO
 
 class TestVcftools(unittest.TestCase):
     
+    
+    def test_get_allele_freq(self):
+        vcfinfo = VCFINFO("/home/fkj/py_project/statvcf/example/data/sample.vcf")
+        arr = vcfinfo.get_allele_freq()
+        print(arr)
+    
+    
     def test_var_type_transition(self):
         vcfinfo = VCFINFO("/home/fkj/py_project/statvcf/example/data/sample.vcf")
-        arr = vcfinfo.get_var_type_info()
-        
+        arr = vcfinfo.get_var_type_info_by_variants()
         # A-->G
         self.assertEqual(arr[0], "transition")
         # G-->A 
@@ -17,10 +22,9 @@ class TestVcftools(unittest.TestCase):
         self.assertEqual(arr[2], "transition")
         # T-->C
         self.assertEqual(arr[3], "transition")
-    
     def test_var_type_transversion(self):
         vcfinfo = VCFINFO("/home/fkj/py_project/statvcf/example/data/sample.vcf")
-        arr = vcfinfo.get_var_type_info()
+        arr = vcfinfo.get_var_type_info_by_variants()
         # A-->C
         self.assertEqual(arr[4], "transversion")
         # A-->T
@@ -37,19 +41,16 @@ class TestVcftools(unittest.TestCase):
         self.assertEqual(arr[10], "transversion")
         # T-->G
         self.assertEqual(arr[11], "transversion")
-    
     def test_var_type_complex(self):
         vcf_info = VCFINFO("/home/fkj/py_project/statvcf/example/data/sample.vcf")
-        arr = vcf_info.get_var_type_info()
+        arr = vcf_info.get_var_type_info_by_variants()
         # A-->G,A
         self.assertEqual(arr[12], "complex")
         # A-->A,GC,C
         self.assertEqual(arr[13], "complex")
-    
     def test_var_type_deletion(self):
         vcf_info = VCFINFO("/home/fkj/py_project/statvcf/example/data/sample.vcf")
-        arr = vcf_info.get_var_type_info()
-        
+        arr = vcf_info.get_var_type_info_by_variants()
         #AG --> A
         self.assertEqual(arr[14], "deletion")
         #AGT --> A
@@ -59,8 +60,7 @@ class TestVcftools(unittest.TestCase):
         
     def test_var_type_insertion(self):
         vcf_info = VCFINFO("/home/fkj/py_project/statvcf/example/data/sample.vcf")
-        arr = vcf_info.get_var_type_info()
-        
+        arr = vcf_info.get_var_type_info_by_variants()
         #A --> AG
         self.assertEqual(arr[17], "insertion")
         #AG --> AGT

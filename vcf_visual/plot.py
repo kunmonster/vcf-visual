@@ -5,7 +5,7 @@ from sklearn.neighbors import KernelDensity
 import numpy as np
 import matplotlib.ticker as mticker
 import matplotlib as mpl
-from utils import get_unit
+from .utils import get_unit
 
 
 def plot_scatter(x_data,y_data):

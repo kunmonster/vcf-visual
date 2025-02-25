@@ -1,14 +1,18 @@
 import sys
 import time
+from tkinter import ALL
 import pandas as pd 
 from natsort import natsorted
 import matplotlib as mpl
-from vcftools import VCFINFO
-from plot import *
-from models import Axis,Operation,Expression,PlotType
-from utils import save_fig,ALLOWED_VARIABLES,SUPPORTED_OPERATIONS
-from args import parser
-from utils import print_var_info
+from sympy import false
+from .vcftools import VCFINFO
+from .plot import *
+from .models import Axis,Operation,Expression,PlotType
+from .utils import save_fig,ALLOWED_VARIABLES,SUPPORTED_OPERATIONS,CUSTOM_FIELD,ORI_FIELD,check_variable_type
+from .args import parser
+from .utils import print_var_info
+
+
 
 def data_to_plot(data:pd.DataFrame,axis:Axis,operation:Operation,plot_type):
     fig = None
@@ -70,11 +74,7 @@ def plot_save(vcf_file:str,exp:str,plot_path:str,plot_type:str,plot_title:str=No
     
     if plot_type is None:
         raise ValueError("plot type is required!")
-    start_time = time.time()
-    plot_data = VCFINFO(vcf_file).get_vcf_info()
-    end_time = time.time()
-    print("耗时: {:.2f}秒".format(end_time - start_time))
-    exit()
+    plot_data = VCFINFO(vcf_file)
     exp_class = Expression(exp)
     params  = exp_class.parse_expression()
     x = params.get("x")
@@ -90,7 +90,6 @@ def plot_save(vcf_file:str,exp:str,plot_path:str,plot_type:str,plot_title:str=No
     fig = data_to_plot(plot_data,axis,operation,plot_type)      
     if plot_title is not None:
         fig.suptitle(plot_title,fontsize=15)
-    print(fig)
     save_fig(fig,plot_path)
     
 
@@ -110,3 +109,29 @@ def main_fun(argv):
     except Exception as e:
         print(f"Error: {e}")
         sys.exit(1)
+        
+        
+def get_plot_data(x,y=None,sample=None,region=None,vcf_file=None):
+    # TODO : 加入过滤选项，region和sample需要优先考虑
+    
+
+    
+    vcf_info = VCFINFO(vcf_file,sample=sample,region=region)
+    
+    print(vcf_info.callset["samples"])
+    
+    if x == None:
+        raise ValueError("x is required!")
+    x_type = check_variable_type(x)
+    if x_type == 0:
+        x_data = vcf_info.callset[ALLOWED_VARIABLES[x]]
+    else:
+        x_data = getattr(vcf_info,ALLOWED_VARIABLES[x])()
+    if y != None:  
+        y_type = check_variable_type(y)
+        if y_type == 0:
+            y_data = vcf_info.callset[ALLOWED_VARIABLES[y]]
+        else:
+            y_data = getattr(vcf_info,ALLOWED_VARIABLES[y])()
+        return pd.DataFrame({x:x_data,y:y_data})
+    return pd.DataFrame({x:x_data})

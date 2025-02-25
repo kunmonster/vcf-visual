@@ -2,11 +2,50 @@ from numbers import Number
 from rich.console import Console
 from rich.table import Table
 
-ALLOWED_VARIABLES = {"CHR", "MAF", "LEN", "AAF", "TYPE", "MISSING_RATE","START"}
+ORI_FIELD = {
+    "CHROM":'variants/CHROM', 
+    "LEN":'variants/SVLEN',
+    "START":'variants/POS',
+    "FILTER":'variants/FILTER',
+    "QUAL":'variants/QUAL',
+    "DEPTH":'variants/DP',
+    "GTTYPE":'variants/GT',
+    "MAF":'get_maf',
+    "AAF":'get_allele_freq',
+    "MISSING_RATE":'get_missing_rate',
+    "ALTTYPE":'get_snp_type'
+}
+
+CUSTOM_FIELD = {
+
+}
+
+
+ALLOWED_VARIABLES = {
+    "CHROM":'variants/CHROM', 
+    "LEN":'variants/SVLEN',
+    "START":'variants/POS',
+    "FILTER":'variants/FILTER',
+    "QUAL":'variants/QUAL',
+    "DEPTH":'variants/DP',
+    "GTTYPE":'variants/GT',
+    "MAF":'get_maf',
+    "AAF":'get_allele_freq',
+    "MISSING_RATE":'get_missing_rate',
+    "ALTTYPE":'get_snp_type'
+    }
+
 SUPPORTED_OPERATIONS = ["count", "sum", "mean", "density","stack","raw"]
+
 PLOT_TYPE={"stack_bar","scatter","density","boxplot","bar","histogram"}
+
 EXPRESSION_KEYS = {"x","y","stack","operation"}
 
+def check_variable_type(var):
+    if "get" in ALLOWED_VARIABLES.get(var):
+        return 1
+    else:
+        return 0
 
 def get_unit(num:Number)->str:
     """

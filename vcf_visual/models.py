@@ -1,4 +1,4 @@
-from utils import ALLOWED_VARIABLES,SUPPORTED_OPERATIONS,EXPRESSION_KEYS,PLOT_TYPE
+from .utils import ALLOWED_VARIABLES,SUPPORTED_OPERATIONS,EXPRESSION_KEYS,PLOT_TYPE
 
 class Axis:
     def __init__(self,x,y=None,stack=None) -> None:
@@ -13,7 +13,7 @@ class Axis:
             self.validate_variable(self.y, "Y")
         if self.stack:
             self.validate_variable(self.stack, "Stack")
-    
+        
     def validate_variable(self, var, axis_name):
         """ this function validate the variable name
         Args:
@@ -23,6 +23,8 @@ class Axis:
         if var not in ALLOWED_VARIABLES:
             raise ValueError(f"error: {axis_name} variable '{var}' is not allowed!"
                              f" allowed variables:{', '.join(ALLOWED_VARIABLES)}")
+            
+
     def determine_variable_type(self, data):
         
         """ this function determine the type of x,y and stack variable from the data
@@ -51,6 +53,7 @@ class Operation:
             raise ValueError(f"operation: '{operation}' is invalid!")
         self.operation_type = operation
 
+
 class Expression:
     def __init__(self,expression:str) -> None:
         if expression is None or expression == "":
@@ -68,6 +71,8 @@ class Expression:
                 raise ValueError(f"Unsupported expression key: {key}")
             expression_dict[key] = value
         return expression_dict
+        
+        
         
 class PlotType:
     @staticmethod

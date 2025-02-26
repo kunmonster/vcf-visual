@@ -1,38 +1,29 @@
 from numbers import Number
+import time
 from rich.console import Console
 from rich.table import Table
 
-ORI_FIELD = {
-    "CHROM":'variants/CHROM', 
-    "LEN":'variants/SVLEN',
-    "START":'variants/POS',
-    "FILTER":'variants/FILTER',
-    "QUAL":'variants/QUAL',
-    "DEPTH":'variants/DP',
-    "GTTYPE":'variants/GT',
+
+COMPUTE_FILED = {
     "MAF":'get_maf',
     "AAF":'get_allele_freq',
     "MISSING_RATE":'get_missing_rate',
     "ALTTYPE":'get_snp_type'
 }
-
-CUSTOM_FIELD = {
-
-}
-
 
 ALLOWED_VARIABLES = {
     "CHROM":'variants/CHROM', 
     "LEN":'variants/SVLEN',
     "START":'variants/POS',
     "FILTER":'variants/FILTER',
+    "SVTYPE":'variants/SVTYPE',
     "QUAL":'variants/QUAL',
     "DEPTH":'variants/DP',
-    "GTTYPE":'variants/GT',
-    "MAF":'get_maf',
-    "AAF":'get_allele_freq',
-    "MISSING_RATE":'get_missing_rate',
-    "ALTTYPE":'get_snp_type'
+    "GTTYPE":'calldata/GT',
+    "MAF":'calldata/GT',
+    "AAF":'calldata/GT',
+    "MISSING_RATE":'calldata/GT',
+    "ALTTYPE":['variants/ALT','variants/REF']
     }
 
 SUPPORTED_OPERATIONS = ["count", "sum", "mean", "density","stack","raw"]
@@ -133,3 +124,16 @@ def save_fig(fig,save_path,file_type=None):
         fig.savefig(save_path, format=file_type)
     return True
 
+
+def consume_time(func):
+    """
+    A decorator to measure the running time of a function
+    """
+    def wrapper(*args, **kwargs):
+        print(func)
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        print(f"The function {func.__name__} took {end_time - start_time:.2f} seconds to run")
+        return result
+    return wrapper

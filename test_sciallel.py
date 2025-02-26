@@ -1,16 +1,20 @@
 
-from operator import call
 import allel
+
+from vcf_visual.utils import consume_time
 
 vcf_path = "/home/fkj/py_project/statvcf/example/data/delly_with_duphold.vcf"
 vcf_capra_path = "/home/fkj/py_project/statvcf/example/data/capra_hircus.vcf.gz"
 vcf_path_a = "/home/fkj/py_project/statvcf/example/data/sample.vcf"
 
-call_set = allel.read_vcf(vcf_path_a,fields="*")
-genotypes = allel.GenotypeArray(call_set['calldata/GT'])
-missing_data = genotypes.count_missing(axis=1)
-print(missing_data[4])
-
+@consume_time
+def test_time():
+    call_set = allel.read_vcf(vcf_path_a,fields="calldata/GT")
+    genotypes = allel.GenotypeArray(call_set['calldata/GT'])
+    missing_data = genotypes.count_missing(axis=1)
+    print(missing_data[4])
+    
+test_time()
 # samples_list = call_set['samples']
 # sample_idx = samples_list.tolist().index('C')
 # print(sample_idx)

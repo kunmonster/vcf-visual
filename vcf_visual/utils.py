@@ -8,7 +8,7 @@ COMPUTE_FILED = {
     "MAF":'get_maf',
     "AAF":'get_allele_freq',
     "MISSING_RATE":'get_missing_rate',
-    "ALTTYPE":'get_snp_type',
+    "SNPTYPE":'get_snp_type',
     "SVLEN":'get_sv_len'
 }
 
@@ -20,12 +20,11 @@ ALLOWED_VARIABLES = {
     "SVTYPE":'variants/SVTYPE',
     "QUAL":'variants/QUAL',
     "DEPTH":'variants/DP',
-    "GTTYPE":'calldata/GT',
     "SVLEN":['variants/POS','variants/END'],
     "MAF":'calldata/GT',
     "AAF":'calldata/GT',
     "MISSING_RATE":'calldata/GT',
-    "ALTTYPE":['variants/ALT','variants/REF']
+    "SNPTYPE":['variants/ALT','variants/REF']
     }
 
 SUPPORTED_OPERATIONS = ["count", "sum", "mean", "density","stack","raw"]
@@ -71,7 +70,7 @@ def print_var_info():
     table_var.add_row("AAF", "numeric","alternate allele frequency")
     table_var.add_row("MAF", "numeric","minor allele frequency")
     table_var.add_row("MISSING_RATE","numeric", "the missing rate of variation")
-    table_var.add_row("ALTTYPE","category", "the type of snp, such as snp, indel, mnp, etc.")
+    table_var.add_row("SNPTYPE","category", "the type of snp, such as snp, indel, mnp, etc.")
     
     console.print(table_var)
 

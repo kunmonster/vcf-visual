@@ -16,7 +16,7 @@ setup(
         'scikit-learn',
         'numpy',
     ],
-    py_modules=["main"],  
+    py_modules=["main"], 
     entry_points={
         "console_scripts": [
             "statvcf=main:main",  # "命令名称=模块:函数"

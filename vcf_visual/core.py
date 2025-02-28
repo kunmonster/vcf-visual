@@ -29,6 +29,7 @@ def get_plot_data(x,y=None,stack=None,filter_field=None,sample=None,region=None,
     
     print("==== start reading vcf file ====")
     vcf_info = VCFINFO(vcf_file,sample=sample,region=region,var_array=vcf_field)
+    print(vcf_info.all_keys)
     print("=====   vcf reading done   =====")
     
     if x == None:

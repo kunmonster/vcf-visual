@@ -8,7 +8,8 @@ COMPUTE_FILED = {
     "MAF":'get_maf',
     "AAF":'get_allele_freq',
     "MISSING_RATE":'get_missing_rate',
-    "ALTTYPE":'get_snp_type'
+    "ALTTYPE":'get_snp_type',
+    "SVLEN":'get_sv_len'
 }
 
 ALLOWED_VARIABLES = {
@@ -20,6 +21,7 @@ ALLOWED_VARIABLES = {
     "QUAL":'variants/QUAL',
     "DEPTH":'variants/DP',
     "GTTYPE":'calldata/GT',
+    "SVLEN":['variants/POS','variants/END'],
     "MAF":'calldata/GT',
     "AAF":'calldata/GT',
     "MISSING_RATE":'calldata/GT',
@@ -33,11 +35,13 @@ PLOT_TYPE={"stack_bar","scatter","density","boxplot","bar","histogram"}
 EXPRESSION_KEYS = {"x","y","stack","operation"}
 
 def check_variable_type(var):
-    if "get" in ALLOWED_VARIABLES.get(var):
+    if var in COMPUTE_FILED.keys():
         return 1
-    else:
+    elif var in ALLOWED_VARIABLES.keys():
         return 0
-
+    else:
+        return -1
+    
 def get_unit(num:Number)->str:
     """
     Get the unit of a number
@@ -60,13 +64,15 @@ def print_var_info():
     table_var.add_column("Type", style="cyan", justify="left")
     table_var.add_column("Description", style="magenta", justify="left")
 
-    table_var.add_row("CHR", "category","chromosome")
-    table_var.add_row("TYPE","category" ,"the type of variation")
+    table_var.add_row("CHROM", "category","chromosome")
+    table_var.add_row("SVTYPE","category" ,"the type of variation")
     table_var.add_row("START","numeric", "the start position of variation")   
     table_var.add_row("LEN","numeric", "the length of variation , SV length")
     table_var.add_row("AAF", "numeric","alternate allele frequency")
     table_var.add_row("MAF", "numeric","minor allele frequency")
     table_var.add_row("MISSING_RATE","numeric", "the missing rate of variation")
+    table_var.add_row("ALTTYPE","category", "the type of snp, such as snp, indel, mnp, etc.")
+    
     console.print(table_var)
 
     table_operation = Table(title="Operations", title_style="bold cyan")
@@ -126,11 +132,9 @@ def save_fig(fig,save_path,file_type=None):
 
 
 def consume_time(func):
-    """
-    A decorator to measure the running time of a function
+    """ A decorator to measure the running time of a function
     """
     def wrapper(*args, **kwargs):
-        print(func)
         start_time = time.time()
         result = func(*args, **kwargs)
         end_time = time.time()

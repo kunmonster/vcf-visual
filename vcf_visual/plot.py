@@ -39,7 +39,7 @@ def plot_stack_bar(bar_labels,bar_data):
     return fig
 
 def plot_bar(x_data,y_data):
-    fig,ax = plt.subplots(figsize=(16,10),dpi=500)
+    fig,ax = plt.subplots(figsize=(10,6),dpi=500)
     ax.bar(x_data,y_data,width=0.8,alpha=0.9)
     max_y = max(y_data)
     ax.set_ylim(-0.03*max_y,max_y+0.1*max_y)
@@ -50,16 +50,25 @@ def plot_bar(x_data,y_data):
     
     
 def plot_density(data,**kwargs):
-    if isinstance(data,list):
-       # single ax
-        kde = KernelDensity(kernel='gaussian', bandwidth=50).fit(data)
-        x_axis = np.linspace(data.min(), data.max(), 1000).reshape(-1, 1)
-        # 计算 log 密度
-        log_density = kde.score_samples(x_axis)
-        fig ,ax = plt.subplots(figsize=(8,6),dpi=500)
-        ax.plot(x_axis, np.exp(log_density), color="skyblue", lw=2)
-        ax.set_xlabel("Value")
-        ax.set_ylabel("Density")
+    
+    if isinstance(data,np.ndarray):
+        
+        # TODO: find a better way to adjust the window size dynamically
+        bins = np.arange(0, data.max(), 1000000)
+    
+        # use window midpoints as x coordinate
+        x = (bins[1:] + bins[:-1])/2
+        
+        # compute variant density in each window
+        h, _ = np.histogram(data, bins=bins)
+        y = h / 1000000
+        
+        # plot
+        fig, ax = plt.subplots(figsize=(12, 3))
+        ax.plot(x, y)
+        ax.set_xlabel('Chromosome position (bp)')
+        ax.set_ylabel('Variant density (bp$^{-1}$)')
+        
         return fig
     else:
        # multi ax

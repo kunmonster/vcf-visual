@@ -177,3 +177,5 @@ example/data/*
 tests/data/
 tests/*.png
 .vscode/
+test_sciallel.py
+test.*png

@@ -7,4 +7,3 @@ Pillow==11.0.0
 pysam==0.22.1
 rich==13.9.4
 scikit_learn==1.6.0
-setuptools==75.8.0
